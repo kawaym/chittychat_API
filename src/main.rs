@@ -34,8 +34,6 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new().app_data(app_data.clone())
         .service(routes::index)
-        .service(routes::user::sign_up)
-        .service(routes::user::sign_in)
-        .service(routes::user::update_user_data)
+        .configure(routes::user::config)
     }).bind((app_host, port))?.run().await
 }

@@ -55,3 +55,7 @@ async fn update_user_data(data: web::Data<AppState>,path: web::Path<i32>, body: 
 
     HttpResponse::NoContent()
 }
+
+pub fn config(cfg: &mut web::ServiceConfig){
+    cfg.service(sign_up).service(sign_in).service(update_user_data);
+}
