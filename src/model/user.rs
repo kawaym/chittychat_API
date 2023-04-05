@@ -14,8 +14,14 @@ pub struct CreateUserData {
     pub email: String,
     pub password: String,
 }
+#[derive(Deserialize, Clone)]
+pub struct LoginUserData {
+    pub nickname: String,
+    pub password: String,
+}
 
 #[derive(Deserialize, Clone)]
 pub struct UpdateUserData {
     pub password: String,
+    pub nickname: String,
 }

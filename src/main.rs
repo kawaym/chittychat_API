@@ -22,7 +22,7 @@ async fn main() -> std::io::Result<()> {
     
     match raw_port.parse::<u16>() {
         Ok(num) => port = num,
-        Err(_) => port = 0000 as u16
+        Err(_) => port = 8080 as u16
     }
 
     let app_data = web::Data::new(AppState {
@@ -35,5 +35,7 @@ async fn main() -> std::io::Result<()> {
         App::new().app_data(app_data.clone())
         .service(routes::index)
         .service(routes::user::sign_up)
+        .service(routes::user::sign_in)
+        .service(routes::user::update_user_data)
     }).bind((app_host, port))?.run().await
 }
