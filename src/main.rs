@@ -4,7 +4,6 @@ use dotenvy::dotenv;
 
 use std::sync::Mutex;
 use std::env;
-use std::num::ParseIntError;
 
 mod model;
 mod routes;
@@ -35,5 +34,6 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new().app_data(app_data.clone())
         .service(routes::index)
+        .service(routes::user::sign_up)
     }).bind((app_host, port))?.run().await
 }
