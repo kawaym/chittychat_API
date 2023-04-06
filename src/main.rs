@@ -7,26 +7,23 @@ use std::env;
 
 mod model;
 mod routes;
-use crate::model::user::User;
+mod utils;
+
+use crate::{model::{user::User, session::Session}, utils::convert_port_to_u16};
 struct AppState {
-    users: Mutex<Vec<User>>
+    users: Mutex<Vec<User>>,
+    sessions: Mutex<Vec<Session>>,
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
     let app_host: String = env::var("APP_HOST").expect("APP_HOST must be set");
-    let raw_port: &str = &env::var("PORT").expect("PORT must be set");
-
-    let port:u16;
+    let port: u16 = convert_port_to_u16(&env::var("PORT").expect("PORT must be set"));   
     
-    match raw_port.parse::<u16>() {
-        Ok(num) => port = num,
-        Err(_) => port = 8080 as u16
-    }
-
     let app_data = web::Data::new(AppState {
-        users: Mutex::new(vec![])
+        users: Mutex::new(vec![]),
+        sessions: Mutex::new(vec![]),
     });
 
     println!("Server running on {}:{}", app_host, port);

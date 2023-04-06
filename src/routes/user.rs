@@ -1,4 +1,7 @@
 use actix_web::{post, web, Responder, HttpResponse, put};
+use chrono::Utc;
+
+use crate::model::session::Session;
 use crate::{AppState, User};
 use crate::model::user::{CreateUserData, UpdateUserData, LoginUserData};
 
@@ -18,6 +21,7 @@ async fn sign_up(data: web::Data<AppState>, body: web::Json<CreateUserData>) -> 
         nickname: body.nickname.clone(),
         password: body.password.clone(),
         email: body.email.clone(),
+        date_of_creation: Utc::now(),
     });
 
     HttpResponse::Created()
@@ -26,19 +30,27 @@ async fn sign_up(data: web::Data<AppState>, body: web::Json<CreateUserData>) -> 
 #[post("/sign-in")]
 async fn sign_in(data: web::Data<AppState>, body: web::Json<LoginUserData>) -> impl Responder {
     let users = data.users.lock().unwrap();
+    let mut sessions = data.sessions.lock().unwrap();
     let mut user_exists = -1;
+
     for i in 0..users.len() {
         if users[i].nickname == body.nickname.clone(){
             user_exists = 0;
             break;
         }
     }
+    
     if user_exists == -1 {
-        HttpResponse::NotFound()
-    }else {
-        
-        HttpResponse::NoContent()
+        return HttpResponse::NotFound();
     }
+
+    sessions.push(Session {
+        id: 1,
+        date_of_creation: Utc::now(),
+        hash: "super_hash".to_string(),
+    });
+
+    HttpResponse::NoContent()
 }
 
 #[put("/user/{id}")]
