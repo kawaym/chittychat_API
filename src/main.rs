@@ -1,3 +1,5 @@
+mod utils;
+
 fn main() {
-    println!("Hello, world!");
+    let env: utils::load_envs::EnvFile = utils::load_envs::load();
 }
