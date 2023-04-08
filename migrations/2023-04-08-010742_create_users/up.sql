@@ -1,0 +1,17 @@
+-- Your SQL goes here
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    nickname VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE sessions (
+    id SERIAL PRIMARY KEY,
+    hash VARCHAR(255) NOT NULL,
+    userId INT NOT NULL REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

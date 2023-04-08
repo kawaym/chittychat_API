@@ -1,73 +1,57 @@
-use actix_web::{post, web, Responder, HttpResponse, put};
-use chrono::Utc;
+use actix::Addr;
+use actix_web::{post, web, Responder, HttpResponse};
+use chrono:: Utc;
 
-use crate::model::session::Session;
-use crate::{AppState, User};
-use crate::model::user::{CreateUserData, UpdateUserData, LoginUserData};
+use crate::database::messages::{CreateUser, FetchUser, CreateSession};
+use crate::database::setup::DbActor;
+use crate::model::db::User;
+use crate::{AppState};
+use crate::model::user::{UserCreateData, UserLoginData};
 
-#[post("/sign-up")]
-async fn sign_up(data: web::Data<AppState>, body: web::Json<CreateUserData>) -> impl Responder {
-    let mut users = data.users.lock().unwrap();
-    let mut max_id: i32 = 0;
+#[post("/create")]
+async fn sign_up(data: web::Data<AppState>, body: web::Json<UserCreateData>) -> impl Responder {
     
-    for i in 0..users.len() {
-        if users[i].id > max_id {
-            max_id = users[i].id
-        }
+    let db: Addr<DbActor> = data.as_ref().db.clone();
+
+    match db.send(CreateUser {
+        nickname: body.nickname.to_string(),
+        email: body.email.to_string(),
+        password: body.password.to_string()
+    }).await {
+        Ok(Ok(info)) => HttpResponse::Created().json(info.nickname),
+        _ => HttpResponse::InternalServerError().json("Failed to create article"),
     }
-
-    users.push(User {
-        id: max_id + 1,
-        nickname: body.nickname.clone(),
-        password: body.password.clone(),
-        email: body.email.clone(),
-        date_of_creation: Utc::now(),
-    });
-
-    HttpResponse::Created()
 }
 
-#[post("/sign-in")]
-async fn sign_in(data: web::Data<AppState>, body: web::Json<LoginUserData>) -> impl Responder {
-    let users = data.users.lock().unwrap();
-    let mut sessions = data.sessions.lock().unwrap();
-    let mut user_exists = -1;
+#[post("/authenticate")]
+async fn sign_in(data: web::Data<AppState>, body: web::Json<UserLoginData>) -> impl Responder {
+    let db: Addr<DbActor> = data.as_ref().db.clone();
+    let mut user: User = User {id: 0, nickname: "".to_string(), password: "".to_string(), email: "".to_string(), created_at: Utc::now(), updated_at: Utc::now()};
+    let user_exists: bool;
 
-    for i in 0..users.len() {
-        if users[i].nickname == body.nickname.clone(){
-            user_exists = 0;
-            break;
-        }
-    }
     
-    if user_exists == -1 {
-        return HttpResponse::NotFound();
+    match db.send(FetchUser {
+        nickname: body.nickname.to_string(),
+        password: body.password.to_string(),
+        id: 0,
+    }).await {
+        Ok(Ok(info)) => {user = info; user_exists = true},
+        _ => user_exists = false,
     }
 
-    sessions.push(Session {
-        id: 1,
-        date_of_creation: Utc::now(),
-        hash: "super_hash".to_string(),
-    });
-
-    HttpResponse::NoContent()
-}
-
-#[put("/user/{id}")]
-async fn update_user_data(data: web::Data<AppState>,path: web::Path<i32>, body: web::Json<UpdateUserData>) -> impl Responder {
-    let mut users = data.users.lock().unwrap();
-    let id = path.into_inner();
-
-    for i in 0..users.len() {
-        if users[i].id == id {
-            users[i].nickname = body.nickname.clone();
-            break;
-        }
+    if !user_exists {
+        HttpResponse::NotFound().json("User not found");
     }
 
-    HttpResponse::NoContent()
+    match db.send( CreateSession {
+        hash: "oie".to_string(),
+        userid: user.id,
+    }).await {
+        Ok(Ok(info)) => HttpResponse::Ok().json({drop(user); info.hash}),
+        _ => HttpResponse::InternalServerError().json("Error creating session"),
+    }
 }
 
 pub fn config(cfg: &mut web::ServiceConfig){
-    cfg.service(sign_up).service(sign_in).service(update_user_data);
+    cfg.service(sign_up).service(sign_in);
 }
